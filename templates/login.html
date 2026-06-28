@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Oblivion Login</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      * {
+        box-sizing: border-box;
+        font-family: "Poppins", sans-serif;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #050505, #111827);
+        color: #f5f5f5;
+      }
+
+      .card {
+        width: min(92vw, 460px);
+        padding: 36px;
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.08);
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        backdrop-filter: blur(16px);
+      }
+
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.9rem;
+      }
+
+      p {
+        color: #c9c9c9;
+        margin-bottom: 22px;
+      }
+
+      .google-btn,
+      .submit-btn {
+        width: 100%;
+        border: none;
+        padding: 12px 16px;
+        border-radius: 999px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: transform 0.2s ease, opacity 0.2s ease;
+      }
+
+      .google-btn:hover,
+      .submit-btn:hover {
+        transform: translateY(-2px);
+        opacity: 0.95;
+      }
+
+      .google-btn {
+        background: #ffffff;
+        color: #111;
+        margin-bottom: 16px;
+      }
+
+      .submit-btn {
+        background: linear-gradient(135deg, #8b5cf6, #3b82f6);
+        color: white;
+      }
+
+      .divider {
+        text-align: center;
+        color: #9ca3af;
+        margin: 14px 0;
+        font-size: 0.9rem;
+      }
+
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      input {
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.06);
+        color: white;
+        outline: none;
+      }
+
+      input::placeholder {
+        color: #9ca3af;
+      }
+
+      .remember {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+        color: #d1d5db;
+      }
+
+      .status {
+        margin-top: 12px;
+        color: #86efac;
+        font-size: 0.95rem;
+        min-height: 20px;
+      }
+
+      .back-link {
+        display: inline-block;
+        margin-top: 16px;
+        color: #93c5fd;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>Sign in to Oblivion</h1>
+      <p>Continue with your Gmail account and we will keep you signed in.</p>
+
+      <button id="gmailBtn" class="google-btn">Continue with Gmail</button>
+
+      <div class="divider">or use your email</div>
+
+      <form id="loginForm">
+        <input id="email" type="email" placeholder="name@gmail.com" required />
+        <label class="remember">
+          <input id="remember" type="checkbox" checked />
+          Remember me
+        </label>
+        <button class="submit-btn" type="submit">Log in</button>
+      </form>
+
+      <div id="status" class="status"></div>
+      <a class="back-link" href="oblivion.html">Back to home</a>
+    </div>
+
+    <script>
+      const form = document.getElementById("loginForm");
+      const emailInput = document.getElementById("email");
+      const rememberInput = document.getElementById("remember");
+      const status = document.getElementById("status");
+      const gmailBtn = document.getElementById("gmailBtn");
+      const nextPath = new URLSearchParams(window.location.search).get("next") || "oblivion.html";
+
+      function saveUser(user) {
+        localStorage.setItem("oblivionUser", JSON.stringify(user));
+      }
+
+      function getUser() {
+        try {
+          return JSON.parse(localStorage.getItem("oblivionUser"));
+        } catch (error) {
+          return null;
+        }
+      }
+
+      const existingUser = getUser();
+      if (existingUser) {
+        emailInput.value = existingUser.email || "";
+        rememberInput.checked = true;
+        status.textContent = `Welcome back, ${existingUser.name || existingUser.email}`;
+      }
+
+      async function submitLogin(email, name, remembered) {
+        const user = { name, email, remembered };
+        saveUser(user);
+        status.textContent = `Signed in as ${user.email}`;
+        window.location.href = nextPath;
+      }
+
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const email = emailInput.value.trim();
+        if (!email) {
+          status.textContent = "Please enter a valid email address.";
+          return;
+        }
+
+        const name = email.split("@")[0].replace(/[._-]/g, " ");
+        submitLogin(email, name.charAt(0).toUpperCase() + name.slice(1), rememberInput.checked).catch((error) => {
+          status.textContent = error.message;
+        });
+      });
+
+      gmailBtn.addEventListener("click", function () {
+        const suggestedEmail = emailInput.value.trim() || "student@gmail.com";
+        emailInput.value = suggestedEmail;
+        submitLogin(suggestedEmail, "Google User", true).catch((error) => {
+          status.textContent = error.message;
+        });
+      });
+    </script>
+  </body>
+</html>
