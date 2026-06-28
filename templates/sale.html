@@ -1,0 +1,788 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>LSTM Sales AI Model</title>
+
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", sans-serif;
+      }
+
+      body {
+        background: #0a0a0a;
+        color: white;
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, #00d4ff55, transparent);
+        top: -200px;
+        left: -200px;
+        filter: blur(80px);
+        z-index: -1;
+      }
+
+      body::after {
+        content: "";
+        position: fixed;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, #8a2be255, transparent);
+        bottom: -200px;
+        right: -200px;
+        filter: blur(80px);
+        z-index: -1;
+      }
+
+      .hero {
+        text-align: center;
+        padding: 80px 20px;
+      }
+
+      .hero h1 {
+        font-size: 4rem;
+        font-weight: 800;
+        background: linear-gradient(90deg, #00d4ff, #9f5cff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .hero p {
+        margin-top: 15px;
+        font-size: 1.2rem;
+        color: #cfcfcf;
+      }
+
+      .auth-bar {
+        max-width: 1000px;
+        margin: 0 auto 24px;
+        padding: 14px 18px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 999px;
+        backdrop-filter: blur(10px);
+      }
+
+      .auth-notice {
+        font-size: 0.95rem;
+        color: #dfe8ff;
+      }
+
+      .auth-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .login-link {
+        text-decoration: none;
+        color: white;
+        background: linear-gradient(90deg, #00d4ff, #8a2be2);
+        padding: 9px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .login-link.secondary {
+        background: rgba(255, 255, 255, 0.12);
+      }
+
+      .container {
+        max-width: 1000px;
+        margin: auto;
+        padding: 20px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(15px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 25px;
+        padding: 35px;
+        box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+      }
+
+      label {
+        display: block;
+        margin-bottom: 15px;
+        font-size: 1.1rem;
+      }
+
+      textarea {
+        width: 100%;
+        height: 180px;
+        padding: 15px;
+        border: none;
+        outline: none;
+        border-radius: 15px;
+        background: #111;
+        color: white;
+        font-size: 1rem;
+        resize: none;
+      }
+
+      button {
+        margin-top: 20px;
+        width: 100%;
+        padding: 16px;
+        border: none;
+        border-radius: 15px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        cursor: pointer;
+        background: linear-gradient(90deg, #00d4ff, #8a2be2);
+        color: white;
+        transition: 0.3s;
+      }
+
+      /* ---------- Inputs ---------- */
+
+      input[type="number"] {
+        width: 100%;
+        padding: 14px 18px;
+        margin: 10px 0;
+        border: none;
+        outline: none;
+        border-radius: 14px;
+
+        background: rgba(255, 255, 255, 0.08);
+        color: white;
+
+        font-size: 1rem;
+
+        border: 1px solid rgba(255, 255, 255, 0.1);
+
+        transition: 0.3s;
+      }
+
+      input[type="number"]:focus {
+        border-color: #00d4ff;
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
+      }
+
+      /* ---------- Card Headings ---------- */
+
+      .card h2 {
+        margin-bottom: 20px;
+        font-size: 2rem;
+        background: linear-gradient(90deg, #00d4ff, #9f5cff);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      /* ---------- Labels ---------- */
+
+      .card label {
+        color: #d0d0d0;
+        margin-top: 15px;
+      }
+
+      /* ---------- Progress Ring ---------- */
+
+      .progress-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 30px 0;
+      }
+
+      .progress-ring {
+        position: relative;
+      }
+
+      .progress-ring svg {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 12;
+      }
+
+      .bg {
+        stroke: rgba(255, 255, 255, 0.1);
+      }
+
+      .progress {
+        stroke: url(#gradient);
+        stroke: #00d4ff;
+
+        stroke-linecap: round;
+
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+
+        transition: all 1s ease;
+      }
+
+      #percent {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+
+        transform: translate(-50%, -50%);
+
+        font-size: 2rem;
+        font-weight: 700;
+
+        color: white;
+      }
+
+      /* ---------- Profit Results ---------- */
+
+      #netProfit,
+      #margin,
+      #breakEven,
+      #requiredOrders {
+        margin-top: 15px;
+
+        padding: 15px;
+
+        background: rgba(255, 255, 255, 0.05);
+
+        border-radius: 12px;
+
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      /* ---------- Slider ---------- */
+
+      input[type="range"] {
+        width: 100%;
+        margin-top: 20px;
+
+        appearance: none;
+        height: 8px;
+
+        border-radius: 20px;
+
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      input[type="range"]::-webkit-slider-thumb {
+        appearance: none;
+
+        width: 22px;
+        height: 22px;
+
+        border-radius: 50%;
+
+        background: #00d4ff;
+
+        cursor: pointer;
+
+        box-shadow: 0 0 15px rgba(0, 212, 255, 0.7);
+      }
+
+      /* ---------- Better Layout ---------- */
+
+      .dashboard-grid {
+        display: grid;
+
+        grid-template-columns: 1fr 1fr;
+
+        gap: 25px;
+
+        margin-top: 30px;
+      }
+
+      .full-width {
+        grid-column: 1/-1;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 35px;
+        margin-top: 50px;
+      }
+
+      .card {
+        margin-bottom: 35px;
+      }
+
+      .support-section {
+        min-height: 70vh;
+        background: #000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 100px 20px;
+      }
+
+      .support-card {
+        position: relative;
+        max-width: 700px;
+        width: 100%;
+        padding: 60px;
+        text-align: center;
+
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+
+        border-radius: 30px;
+
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+
+        box-shadow:
+          0 0 50px rgba(255, 255, 255, 0.04),
+          inset 0 0 30px rgba(255, 255, 255, 0.02);
+
+        overflow: hidden;
+      }
+
+      .support-card::before {
+        content: "";
+        position: absolute;
+        width: 250px;
+        height: 250px;
+
+        background: radial-gradient(
+          circle,
+          rgba(255, 255, 255, 0.12),
+          transparent 70%
+        );
+
+        top: -120px;
+        right: -120px;
+      }
+
+      .support-tag {
+        display: inline-block;
+
+        padding: 8px 18px;
+        margin-bottom: 20px;
+
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 999px;
+
+        color: #aaa;
+        font-size: 0.75rem;
+        letter-spacing: 4px;
+      }
+
+      .support-card h2 {
+        color: #fff;
+        font-size: 3rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+      }
+
+      .support-card p {
+        color: #bdbdbd;
+        font-size: 1.05rem;
+        line-height: 1.8;
+        max-width: 550px;
+        margin: auto auto 35px;
+      }
+
+      .support-btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+
+        padding: 16px 38px;
+
+        text-decoration: none;
+        color: #fff;
+        font-weight: 600;
+        font-size: 1rem;
+
+        border-radius: 50px;
+
+        background: linear-gradient(135deg, #111, #222);
+
+        border: 1px solid rgba(255, 255, 255, 0.12);
+
+        transition: all 0.4s ease;
+      }
+
+      .support-btn:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 40px rgba(255, 255, 255, 0.12);
+
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+
+      @media (max-width: 768px) {
+        .support-card {
+          padding: 40px 25px;
+        }
+
+        .support-card h2 {
+          font-size: 2.2rem;
+        }
+
+        .support-card p {
+          font-size: 0.95rem;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .dashboard-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      button:hover {
+        transform: translateY(-2px);
+      }
+
+      .result {
+        margin-top: 25px;
+        padding: 20px;
+        border-radius: 15px;
+        background: #111;
+        font-size: 1.2rem;
+        display: none;
+      }
+
+      .progress-container {
+        display: flex;
+        justify-content: center;
+        margin-top: 20px;
+      }
+
+      .progress-ring {
+        position: relative;
+      }
+
+      .progress-ring svg {
+        transform: rotate(-90deg);
+      }
+
+      .progress-ring circle {
+        fill: none;
+        stroke-width: 12;
+      }
+
+      .bg {
+        stroke: #ddd;
+      }
+
+      .progress {
+        stroke: #4caf50;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+        transition: 1s;
+      }
+
+      #percent {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 24px;
+        font-weight: bold;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 60px 20px;
+        margin-top: 60px;
+      }
+
+      .footer h2 {
+        font-size: 2rem;
+        margin-bottom: 10px;
+      }
+
+      .footer p {
+        color: #bdbdbd;
+      }
+
+      .glow {
+        color: #00d4ff;
+        font-weight: bold;
+      }
+    </style>
+  </head>
+  <body>
+    <section class="hero">
+      <div class="auth-bar">
+        <div id="authNotice" class="auth-notice">
+          Please log in to unlock prediction tools.
+        </div>
+        <div class="auth-actions">
+          <a id="loginLink" class="login-link" href="/login?next=/sale"
+            >Log in</a
+          >
+          <a
+            id="logoutLink"
+            class="login-link secondary"
+            href="/logout"
+            style="display: none"
+            >Log out</a
+          >
+        </div>
+      </div>
+
+      <h1>The Sales Buddy</h1>
+      <p>
+        Next Generation Sales Forecasting Powered by Deep Learning and helping u
+        in ur business
+      </p>
+    </section>
+
+    <div class="container">
+      <div class="card">
+        <h2>Monthly Goal Progress</h2>
+
+        <input type="number" id="goal" placeholder="Monthly Goal ₹" />
+        <input type="number" id="actual" placeholder="Current Sales ₹" />
+
+        <div class="progress-container">
+          <div class="progress-ring">
+            <svg width="180" height="180">
+              <circle class="bg" cx="90" cy="90" r="70"></circle>
+              <circle class="progress" cx="90" cy="90" r="70"></circle>
+            </svg>
+            <div id="percent">0%</div>
+          </div>
+        </div>
+
+        <button onclick="if (requireLogin()) updateProgress();">
+          Calculate
+        </button>
+      </div>
+
+      <div class="card">
+        <h2>Profit Calculator</h2>
+
+        <input type="number" id="salesRevenue" placeholder="Revenue" />
+
+        <input type="number" id="fixedCost" placeholder="Rent + Utilities" />
+
+        <input type="number" id="variableCost" placeholder="COGS" />
+
+        <button onclick="if (requireLogin()) calculateProfit();">
+          Calculate
+        </button>
+
+        <h3 id="netProfit"></h3>
+        <h3 id="margin"></h3>
+        <h3 id="breakEven"></h3>
+      </div>
+
+      <div class="card">
+        <h2>Goal Simulator</h2>
+
+        <label>Monthly Target ₹</label>
+        <input type="number" id="targetRevenue" value="500000" />
+
+        <br /><br />
+
+        <label> Average Order Value: ₹<span id="aovValue">1000</span> </label>
+
+        <input type="range" min="100" max="5000" value="1000" id="aovSlider" />
+
+        <h3 id="requiredOrders"></h3>
+      </div>
+
+      <div class="card">
+        <label> Enter Last 30 Sales Values (comma separated) </label>
+
+        <textarea
+          id="salesInput"
+          placeholder="1200,1250,1300,1400,1500,..."
+        ></textarea>
+
+        <button onclick="if (requireLogin()) predictSales();">
+          Predict Next Day Sales
+        </button>
+
+        <div class="result" id="result"></div>
+      </div>
+    </div>
+
+    <section class="support-section">
+      <div class="support-card">
+        <span class="support-tag">OBLIVION</span>
+
+        <h2>Support My Journey</h2>
+
+        <p>
+          Every contribution helps me build better AI projects, create
+          innovative products, and push Oblivion further. Thank you for being
+          part of the journey.
+        </p>
+
+        <a href="YOUR_BUYMEACHAI_LINK" target="_blank" class="support-btn">
+          Support Me
+        </a>
+      </div>
+    </section>
+
+    <div class="footer">
+      <h2><span class="glow">OBLIVION</span></h2>
+      <p>Advanced AI • Deep Learning • Forecast Intelligence</p>
+    </div>
+
+    <script>
+      let authUser = null;
+
+      function requireLogin() {
+        if (!authUser) {
+          window.location.href = "/login?next=/sale";
+          return false;
+        }
+        return true;
+      }
+
+      function updateAuthUI(user) {
+        const notice = document.getElementById("authNotice");
+        const loginLink = document.getElementById("loginLink");
+        const logoutLink = document.getElementById("logoutLink");
+
+        if (user) {
+          authUser = user;
+          notice.textContent = `Signed in as ${user.email}`;
+          loginLink.style.display = "none";
+          logoutLink.style.display = "inline-block";
+        } else {
+          authUser = null;
+          notice.textContent = "Please log in to unlock prediction tools.";
+          loginLink.style.display = "inline-block";
+          logoutLink.style.display = "none";
+        }
+      }
+
+      async function loadAuth() {
+        try {
+          const response = await fetch("/me");
+          const data = await response.json();
+          updateAuthUI(data.loggedIn ? data.user : null);
+        } catch (err) {
+          updateAuthUI(null);
+        }
+      }
+
+      async function predictSales() {
+        const resultBox = document.getElementById("result");
+
+        try {
+          let values = document
+            .getElementById("salesInput")
+            .value.split(",")
+            .map((x) => Number(x.trim()));
+
+          if (values.length !== 30) {
+            resultBox.style.display = "block";
+
+            resultBox.innerHTML = "Please enter exactly 30 sales values.";
+
+            return;
+          }
+
+          const response = await fetch("/predict", {
+            method: "POST",
+
+            headers: {
+              "Content-Type": "application/json",
+            },
+
+            body: JSON.stringify({
+              sales: values,
+            }),
+          });
+
+          const data = await response.json();
+
+          resultBox.style.display = "block";
+
+          if (data.error) {
+            resultBox.innerHTML = "Error: " + data.error;
+          } else {
+            resultBox.innerHTML =
+              "📈 Predicted Next Day Sales: <strong>₹ " +
+              data.prediction +
+              "</strong>";
+          }
+        } catch (err) {
+          resultBox.style.display = "block";
+
+          resultBox.innerHTML = "Prediction failed.";
+        }
+      }
+
+      function updateProgress() {
+        let goal = Number(document.getElementById("goal").value);
+        let actual = Number(document.getElementById("actual").value);
+
+        let percentage = Math.min((actual / goal) * 100, 100);
+
+        let circle = document.querySelector(".progress");
+
+        let circumference = 440;
+        let offset = circumference - (percentage / 100) * circumference;
+
+        circle.style.strokeDashoffset = offset;
+
+        document.getElementById("percent").innerHTML =
+          percentage.toFixed(1) + "%";
+      }
+
+      function calculateProfit() {
+        let revenue = Number(document.getElementById("salesRevenue").value);
+
+        let fixed = Number(document.getElementById("fixedCost").value);
+
+        let variable = Number(document.getElementById("variableCost").value);
+
+        let totalCost = fixed + variable;
+
+        let profit = revenue - totalCost;
+
+        let margin = (profit / revenue) * 100;
+
+        let breakEven = revenue - totalCost;
+
+        document.getElementById("netProfit").innerHTML =
+          "Net Profit: ₹" + profit.toFixed(2);
+
+        document.getElementById("margin").innerHTML =
+          "Margin: " + margin.toFixed(2) + "%";
+
+        document.getElementById("breakEven").innerHTML =
+          breakEven >= 0
+            ? "Break-Even Reached ✅"
+            : "Need ₹" + Math.abs(breakEven).toFixed(2) + " more to break even";
+      }
+
+      const slider = document.getElementById("aovSlider");
+
+      slider.addEventListener("input", simulateGoal);
+
+      function simulateGoal() {
+        let target = Number(document.getElementById("targetRevenue").value);
+
+        let aov = Number(slider.value);
+
+        document.getElementById("aovValue").innerHTML = aov;
+
+        let ordersNeeded = Math.ceil(target / aov);
+
+        document.getElementById("requiredOrders").innerHTML =
+          "Orders Needed: " + ordersNeeded;
+      }
+
+      simulateGoal();
+      loadAuth();
+    </script>
+  </body>
+</html>
